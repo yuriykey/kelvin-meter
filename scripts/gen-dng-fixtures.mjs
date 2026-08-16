@@ -163,6 +163,16 @@ const SCENE_XY = { x: 0.4091, y: 0.3906 }; // roughly a 3200 K tungsten balance
 const SCENE_KELVIN = 3200;
 const AS_SHOT_NEUTRAL = neutralFor(SCENE_XY, SCENE_KELVIN);
 
+/**
+ * Two more scenes at the ends of the working range. Having fixtures that
+ * genuinely differ in temperature is what lets a two-point calibration be
+ * exercised against real file bytes rather than against one value repeated.
+ */
+const WARM_SCENE_XY = { x: 0.4599, y: 0.4106 }; // ~2700 K
+const WARM_SCENE_KELVIN = 2700;
+const COOL_SCENE_XY = { x: 0.3221, y: 0.3318 }; // ~6000 K
+const COOL_SCENE_KELVIN = 6000;
+
 function baseEntries() {
   return [
     entry(TAG.NewSubfileType, TYPE.LONG, [0]),
@@ -250,7 +260,24 @@ writeJson(
   }),
 );
 
-// 4. A DNG with only one calibration illuminant, so nothing can be
+// 4. The same camera under a warm and a cool source, so a two-point
+//    calibration has two genuinely different measurements to fit.
+for (const [name, xy, kelvin] of [
+  ['synthetic-warm.dng', WARM_SCENE_XY, WARM_SCENE_KELVIN],
+  ['synthetic-cool.dng', COOL_SCENE_XY, COOL_SCENE_KELVIN],
+]) {
+  const neutral = neutralFor(xy, kelvin);
+  const entries = baseEntries()
+    .filter((item) => item.tag !== TAG.AsShotNeutral)
+    .concat(entry(TAG.AsShotNeutral, TYPE.RATIONAL, neutral));
+  write(name, buildTiff(entries, { littleEndian: true }));
+  writeJson(
+    `${name.replace(/\.dng$/, '')}.exiftool.json`,
+    exiftoolJson(name, { AsShotNeutral: exifList(neutral) }),
+  );
+}
+
+// 5. A DNG with only one calibration illuminant, so nothing can be
 //    interpolated.
 const singleIlluminant = baseEntries().filter(
   (item) =>
@@ -260,16 +287,16 @@ const singleIlluminant = baseEntries().filter(
 );
 write('synthetic-single-illuminant.dng', buildTiff(singleIlluminant, { littleEndian: true }));
 
-// 5. A file with no white balance recorded at all.
+// 6. A file with no white balance recorded at all.
 const noWhiteBalance = baseEntries().filter((item) => item.tag !== TAG.AsShotNeutral);
 write('synthetic-no-neutral.dng', buildTiff(noWhiteBalance, { littleEndian: true }));
 
-// 6. Truncated mid-IFD, to check the parser fails cleanly instead of
+// 7. Truncated mid-IFD, to check the parser fails cleanly instead of
 //    reading past the end of the buffer.
 const complete = buildTiff(baseEntries(), { littleEndian: true });
 write('synthetic-truncated.dng', complete.slice(0, 40));
 
-// 7. Not a TIFF at all.
+// 8. Not a TIFF at all.
 write('not-a-dng.bin', new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]));
 
 // The scene the fixtures encode, so tests can assert the solve recovers it.
@@ -277,6 +304,8 @@ writeJson('synthetic-scene.json', {
   note: 'Ground truth for the synthetic fixtures. Regenerate with: npm run fixtures',
   sceneXY: { x: quantise(SCENE_XY.x), y: quantise(SCENE_XY.y) },
   sceneKelvinUsedForInterpolation: SCENE_KELVIN,
+  warmSceneXY: { x: quantise(WARM_SCENE_XY.x), y: quantise(WARM_SCENE_XY.y) },
+  coolSceneXY: { x: quantise(COOL_SCENE_XY.x), y: quantise(COOL_SCENE_XY.y) },
   asShotNeutral: AS_SHOT_NEUTRAL,
   colorMatrix1: COLOR_MATRIX_1,
   colorMatrix2: COLOR_MATRIX_2,

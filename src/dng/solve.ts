@@ -23,6 +23,7 @@ import {
   matMul,
   matMulVec,
   diagonal,
+  lightSourceName,
   xyToTemperatureTint,
   xyzToXY,
   measureXY,
@@ -42,6 +43,21 @@ export type IlluminantSource =
   | 'AsShotNeutral + ColorMatrix interpolation'
   | 'AsShotNeutral + single ColorMatrix';
 
+/**
+ * How the two calibration matrices were blended, for the audit readout.
+ *
+ * `warmWeight` is the fraction taken from the lower-temperature calibration.
+ * Low colour temperature means warm light, so naming it by temperature alone
+ * inverts in conversation — hence both the weight and the illuminant names.
+ */
+export interface InterpolationDetail {
+  readonly warmWeight: number;
+  readonly warmKelvin: number;
+  readonly coolKelvin: number;
+  readonly warmName: string;
+  readonly coolName: string;
+}
+
 export interface SolveResult {
   readonly xy: XY;
   readonly measurement: Measurement;
@@ -50,8 +66,8 @@ export interface SolveResult {
   readonly source: IlluminantSource;
   readonly iterations: number;
   readonly converged: boolean;
-  /** Calibration illuminants actually used, for the audit readout. */
-  readonly interpolationWeight: number | null;
+  /** Null when the file has only one calibration illuminant. */
+  readonly interpolation: InterpolationDetail | null;
 }
 
 export class DngSolveError extends Error {
@@ -73,12 +89,12 @@ export function findXYZtoCamera(
   calibrations: readonly CalibrationSet[],
   analogBalance: Vec3 | null,
   white: XY,
-): { matrix: Mat3; weight: number | null } {
+): { matrix: Mat3; interpolation: InterpolationDetail | null } {
   if (calibrations.length === 0) {
     throw new DngSolveError('File has no ColorMatrix tag, so it cannot be solved');
   }
 
-  const { colorMatrix, cameraCalibration, weight } = interpolateCalibration(
+  const { colorMatrix, cameraCalibration, interpolation } = interpolateCalibration(
     calibrations,
     white,
   );
@@ -86,19 +102,19 @@ export function findXYZtoCamera(
   let matrix = colorMatrix;
   if (cameraCalibration) matrix = matMul(cameraCalibration, matrix);
   if (analogBalance) matrix = matMul(diagonal(analogBalance), matrix);
-  return { matrix, weight };
+  return { matrix, interpolation };
 }
 
 function interpolateCalibration(
   calibrations: readonly CalibrationSet[],
   white: XY,
-): { colorMatrix: Mat3; cameraCalibration: Mat3 | null; weight: number | null } {
+): { colorMatrix: Mat3; cameraCalibration: Mat3 | null; interpolation: InterpolationDetail | null } {
   const first = calibrations[0]!;
   if (calibrations.length === 1) {
     return {
       colorMatrix: first.colorMatrix,
       cameraCalibration: first.cameraCalibration,
-      weight: null,
+      interpolation: null,
     };
   }
 
@@ -125,7 +141,7 @@ function interpolateCalibration(
     return {
       colorMatrix: lower.colorMatrix,
       cameraCalibration: lower.cameraCalibration,
-      weight: 1,
+      interpolation: describeInterpolation(lower, upper, 1),
     };
   }
 
@@ -158,7 +174,25 @@ function interpolateCalibration(
     cameraCalibration = lower.cameraCalibration ?? upper.cameraCalibration;
   }
 
-  return { colorMatrix, cameraCalibration, weight: g };
+  return {
+    colorMatrix,
+    cameraCalibration,
+    interpolation: describeInterpolation(lower, upper, g),
+  };
+}
+
+function describeInterpolation(
+  warm: CalibrationSet,
+  cool: CalibrationSet,
+  warmWeight: number,
+): InterpolationDetail {
+  return {
+    warmWeight,
+    warmKelvin: warm.illuminantKelvin,
+    coolKelvin: cool.illuminantKelvin,
+    warmName: lightSourceName(warm.illuminantCode),
+    coolName: lightSourceName(cool.illuminantCode),
+  };
 }
 
 /**
@@ -173,14 +207,20 @@ export function neutralToXY(
   calibrations: readonly CalibrationSet[],
   analogBalance: Vec3 | null,
   neutral: Vec3,
-): { xy: XY; iterations: number; converged: boolean; weight: number | null } {
+): {
+  xy: XY;
+  iterations: number;
+  converged: boolean;
+  interpolation: InterpolationDetail | null;
+} {
   let current: XY = SOLVE_SEED_XY;
   let previousKelvin = Number.NaN;
-  let weight: number | null = null;
+  let interpolation: InterpolationDetail | null = null;
 
   for (let iteration = 1; iteration <= SOLVE_MAX_ITERATIONS; iteration++) {
-    const { matrix, weight: w } = findXYZtoCamera(calibrations, analogBalance, current);
-    weight = w;
+    const found = findXYZtoCamera(calibrations, analogBalance, current);
+    const matrix = found.matrix;
+    interpolation = found.interpolation;
 
     let xyz: Vec3;
     try {
@@ -201,13 +241,13 @@ export function neutralToXY(
     const kelvin = xyToTemperatureTint(next).kelvin;
 
     if (Number.isFinite(previousKelvin) && Math.abs(kelvin - previousKelvin) < SOLVE_TOLERANCE_KELVIN) {
-      return { xy: next, iterations: iteration, converged: true, weight };
+      return { xy: next, iterations: iteration, converged: true, interpolation };
     }
 
     if (iteration === SOLVE_MAX_ITERATIONS) {
       // Almost certainly a two-value limit cycle; split the difference.
       const averaged: XY = { x: (current.x + next.x) / 2, y: (current.y + next.y) / 2 };
-      return { xy: averaged, iterations: iteration, converged: false, weight };
+      return { xy: averaged, iterations: iteration, converged: false, interpolation };
     }
 
     previousKelvin = kelvin;
@@ -231,7 +271,7 @@ export function solveIlluminant(metadata: DngMetadata): SolveResult {
       source: 'AsShotWhiteXY',
       iterations: 0,
       converged: true,
-      interpolationWeight: null,
+      interpolation: null,
     };
   }
 
@@ -262,7 +302,7 @@ export function solveIlluminant(metadata: DngMetadata): SolveResult {
         : 'AsShotNeutral + single ColorMatrix',
     iterations: solved.iterations,
     converged: solved.converged,
-    interpolationWeight: solved.weight,
+    interpolation: solved.interpolation,
   };
 }
 

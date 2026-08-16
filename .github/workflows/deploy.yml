@@ -1,0 +1,79 @@
+name: Build and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets a broken deploy be re-run without an empty commit.
+  workflow_dispatch:
+
+# The deploy needs to write a Pages artifact and mint an OIDC token; nothing
+# else here needs write access to the repository.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time. `cancel-in-progress: false` so a queued deploy is not
+# discarded halfway through publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The build embeds the short commit SHA as the version string, which
+          # needs real git history rather than a detached blob.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        # Playwright is a devDependency for the local smoke test only. CI never
+        # drives a browser, so skip the ~200 MB browser download.
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Verify generated assets are committed
+        # The icons and DNG fixtures are generated but committed, so a stale
+        # generator and a stale asset can silently disagree. Regenerating and
+        # diffing catches that here rather than on someone's phone.
+        run: |
+          npm run icons
+          npm run fixtures
+          git diff --exit-code -- public test/fixtures
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the service worker precache is complete
+        run: node scripts/verify-build.mjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

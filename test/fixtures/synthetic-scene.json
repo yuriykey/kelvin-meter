@@ -5,6 +5,14 @@
     "y": 0.3906
   },
   "sceneKelvinUsedForInterpolation": 3200,
+  "warmSceneXY": {
+    "x": 0.4599,
+    "y": 0.4106
+  },
+  "coolSceneXY": {
+    "x": 0.3221,
+    "y": 0.3318
+  },
   "asShotNeutral": [
     0.771676,
     1,

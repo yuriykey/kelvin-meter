@@ -188,6 +188,26 @@ describe('illuminant solve', () => {
     expect(result.measurement.kelvin).toBeLessThan(3600);
   });
 
+  it('separates a warm, a mid and a cool scene in the right order', () => {
+    const warm = solveIlluminant(parseDng(load('synthetic-warm.dng'))).measurement.kelvin;
+    const mid = solveIlluminant(parseDng(load('synthetic-le.dng'))).measurement.kelvin;
+    const cool = solveIlluminant(parseDng(load('synthetic-cool.dng'))).measurement.kelvin;
+
+    expect(warm).toBeLessThan(mid);
+    expect(mid).toBeLessThan(cool);
+    // Each should land near the illuminant the fixture was generated from.
+    expect(Math.abs(warm - 2700)).toBeLessThan(200);
+    expect(Math.abs(cool - 6000)).toBeLessThan(200);
+  });
+
+  it('leans on the warm calibration for warm scenes and the cool one for cool scenes', () => {
+    const warm = solveIlluminant(parseDng(load('synthetic-warm.dng'))).interpolation!;
+    const cool = solveIlluminant(parseDng(load('synthetic-cool.dng'))).interpolation!;
+    expect(warm.warmWeight).toBeGreaterThan(cool.warmWeight);
+    expect(warm.warmWeight).toBeGreaterThan(0.9);
+    expect(cool.warmWeight).toBeLessThan(0.2);
+  });
+
   it('gives the same answer from either byte order', () => {
     const little = solveIlluminant(parseDng(load('synthetic-le.dng')));
     const big = solveIlluminant(parseDng(load('synthetic-be.dng')));
@@ -216,8 +236,22 @@ describe('illuminant solve', () => {
 
   it('interpolates strictly between the two calibrations', () => {
     const result = solveIlluminant(parseDng(load('synthetic-le.dng')));
-    expect(result.interpolationWeight).toBeGreaterThan(0);
-    expect(result.interpolationWeight).toBeLessThan(1);
+    expect(result.interpolation).not.toBeNull();
+    expect(result.interpolation!.warmWeight).toBeGreaterThan(0);
+    expect(result.interpolation!.warmWeight).toBeLessThan(1);
+  });
+
+  it('names the calibration illuminants it blended, warm end first', () => {
+    // The weight is the share of the LOWER-temperature calibration, which is
+    // the WARMER light. Reporting a bare percentage inverts in conversation.
+    const result = solveIlluminant(parseDng(load('synthetic-le.dng')));
+    const blend = result.interpolation!;
+    expect(blend.warmKelvin).toBeLessThan(blend.coolKelvin);
+    expect(blend.warmName).toBe('Standard light A');
+    expect(blend.coolName).toBe('D65');
+    // The fixture is a ~3400 K scene, much nearer the 2850 K calibration than
+    // the 6500 K one, so most of the blend must come from the warm end.
+    expect(blend.warmWeight).toBeGreaterThan(0.5);
   });
 
   it('short-circuits to AsShotWhiteXY when present, skipping the iteration', () => {
@@ -231,7 +265,7 @@ describe('illuminant solve', () => {
   it('works with a single calibration illuminant, and says so', () => {
     const result = solveIlluminant(parseDng(load('synthetic-single-illuminant.dng')));
     expect(result.source).toBe('AsShotNeutral + single ColorMatrix');
-    expect(result.interpolationWeight).toBeNull();
+    expect(result.interpolation).toBeNull();
     expect(result.measurement.kelvin).toBeGreaterThan(1667);
   });
 

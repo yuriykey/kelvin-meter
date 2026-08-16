@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      viewport-fit=cover plus the safe-area insets in the CSS keeps the layout
+      clear of the notch and the home indicator when running full screen from
+      the iOS home screen.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>KelvinMeter</title>
+    <meta
+      name="description"
+      content="Offline colour temperature meter for photography. Reads CCT in Kelvin from a raw DNG, or approximately from a live camera view."
+    />
+
+    <!-- Relative, so the app works unchanged at a GitHub Pages subpath. -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+
+    <meta name="theme-color" content="#0b0f14" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- iOS home screen behaviour. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KelvinMeter" />
+
+    <!-- Telephone detection turns Kelvin readings into phone number links. -->
+    <meta name="format-detection" content="telephone=no" />
+  </head>
+  <body>
+    <noscript>
+      <p style="color: #e6edf3; background: #0b0f14; font: 16px system-ui; padding: 2rem">
+        KelvinMeter needs JavaScript. All of its computation happens on this device;
+        there is no server to fall back to.
+      </p>
+    </noscript>
+    <div id="app"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

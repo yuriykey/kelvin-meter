@@ -1,0 +1,21 @@
+[
+  {
+    "SourceFile": "synthetic-warm.dng",
+    "Make": "KelvinMeter",
+    "Model": "Synthetic Reference Camera",
+    "UniqueCameraModel": "KelvinMeter Synthetic Reference Camera",
+    "DNGVersion": "1 4 0 0",
+    "DNGBackwardVersion": "1 1 0 0",
+    "ProfileName": "KelvinMeter Synthetic",
+    "ImageWidth": 4032,
+    "ImageHeight": 3024,
+    "ColorMatrix1": "1.337146 -0.595631 -0.206999 -0.704803 1.607203 0.068532 0.000667 -0.000217 0.790118",
+    "ColorMatrix2": "1.26723 -0.532525 -0.186067 -0.732354 1.6456 0.064151 0.034428 -0.053565 0.740249",
+    "CameraCalibration1": "1 0 0 0 1 0 0 0 1",
+    "CameraCalibration2": "1 0 0 0 1 0 0 0 1",
+    "AnalogBalance": "1 1 1",
+    "AsShotNeutral": "0.996888 1 0.29751",
+    "CalibrationIlluminant1": 17,
+    "CalibrationIlluminant2": 21
+  }
+]
