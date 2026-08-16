@@ -12,11 +12,10 @@ import {
   type MeasurementMode,
   type XY,
   DUV_VALIDITY_LIMIT,
+  formatMired,
   ROBERTSON_MAX_KELVIN,
   ROBERTSON_MIN_KELVIN,
   kelvinToMired,
-  measureXY,
-  xyToTemperatureTint,
 } from './color/index.ts';
 import { type CalibrationProfile, applyCalibration } from './calibration/index.ts';
 import type { FeatureResult } from './live/index.ts';
@@ -126,7 +125,7 @@ export function readingFromDng(
     { label: 'Source tag', value: solve.source },
     { label: 'Duv', value: formatSignedFixed(measurement.duv, 4) },
     { label: 'CIE xy', value: `${solve.xy.x.toFixed(4)}, ${solve.xy.y.toFixed(4)}` },
-    { label: 'Mired', value: kelvinToMired(measurement.kelvin).toFixed(1) },
+    { label: 'Mired', value: formatMired(kelvinToMired(measurement.kelvin)) },
     { label: 'Uncorrected', value: `${Math.round(measurement.kelvin)} K` },
   ];
 
@@ -276,7 +275,7 @@ export function readingFromLive(
     details.push({ label: 'Frame-to-frame spread', value: `±${Math.round(kelvinSpread)} K` });
   }
   if (Number.isFinite(corrected.kelvin)) {
-    details.push({ label: 'Mired', value: kelvinToMired(corrected.kelvin).toFixed(1) });
+    details.push({ label: 'Mired', value: formatMired(kelvinToMired(corrected.kelvin)) });
   }
 
   return {
@@ -306,30 +305,6 @@ export function readingFromLive(
  * the user calibrates.
  */
 export const LIVE_TINT_SCALE = 40;
-
-/** A reading recovered from a stored measurement, for the log screen. */
-export function readingFromXY(xy: XY, mode: MeasurementMode): Reading {
-  const measurement = measureXY(xy);
-  const adobe = xyToTemperatureTint(xy);
-  return {
-    mode,
-    kelvin: measurement.kelvin,
-    tint: adobe.tint,
-    rawKelvin: measurement.kelvin,
-    rawTint: adobe.tint,
-    duv: measurement.duv,
-    xy,
-    calibrated: false,
-    extrapolated: false,
-    profileName: null,
-    profileId: null,
-    source: 'stored',
-    feature: null,
-    warnings: [],
-    details: [],
-    createdAt: Date.now(),
-  };
-}
 
 /**
  * Names the offending patches as a sentence subject, with the verb that

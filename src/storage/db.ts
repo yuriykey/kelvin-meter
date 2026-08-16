@@ -173,21 +173,6 @@ export async function deleteMeasurement(id: string): Promise<void> {
   await runTransaction(STORE.measurements, 'readwrite', (store) => store.delete(id));
 }
 
-export async function deleteMeasurementsInSession(sessionId: string): Promise<void> {
-  const all = await listMeasurements();
-  const db = await openDatabase();
-  await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(STORE.measurements, 'readwrite');
-    const store = transaction.objectStore(STORE.measurements);
-    for (const measurement of all) {
-      if (measurement.sessionId === sessionId) store.delete(measurement.id);
-    }
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error('Delete failed'));
-    transaction.onabort = () => reject(transaction.error ?? new Error('Delete aborted'));
-  });
-}
-
 /* -------------------------------------------------------------------- */
 /* Settings                                                              */
 /* -------------------------------------------------------------------- */

@@ -73,8 +73,6 @@ export function findCard(id: string | null): ReferenceCard | null {
   return REFERENCE_CARDS.find((card) => card.id === id) ?? null;
 }
 
-export const PATCH_ROLE_ORDER: readonly PatchRole[] = ['warm', 'cool', 'green', 'neutral'];
-
 export function patchForRole(card: ReferenceCard, role: PatchRole): PatchSpec | null {
   return card.patches.find((patch) => patch.role === role) ?? null;
 }

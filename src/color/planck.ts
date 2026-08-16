@@ -80,13 +80,3 @@ export function daylightXY(kelvin: number): XY {
   return { x, y };
 }
 
-/**
- * Nominal CCT of a CIE D-series illuminant name.
- *
- * D65 is nominally 6500 K but the 1931 -> 1968 revision of c2 means the
- * actual chromaticity corresponds to 6500 * 1.4388 / 1.4380 = 6503.6 K.
- * The daylight locus formula above expects the nominal figure.
- */
-export function daylightNominalKelvin(dSeries: number): number {
-  return dSeries * 100;
-}

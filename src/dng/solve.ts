@@ -260,8 +260,10 @@ export function neutralToXY(
 
 /** End-to-end: parsed DNG metadata in, measurement out. */
 export function solveIlluminant(metadata: DngMetadata): SolveResult {
-  // A writer that stored the chromaticity directly has already done this
-  // work, and its answer is authoritative over anything we re-derive.
+  // The DNG spec makes AsShotWhiteXY and AsShotNeutral mutually exclusive:
+  // each tag's presence precludes the other. Should a writer emit both
+  // anyway, the stored chromaticity wins, matching the DNG SDK, which
+  // prefers the negative's CameraWhiteXY when it has one.
   if (metadata.asShotWhiteXY) {
     const xy = metadata.asShotWhiteXY;
     return {

@@ -72,6 +72,3 @@ export function miredToKelvin(mired: number): number {
   return 1e6 / mired;
 }
 
-export function distanceUV(a: UV, b: UV): number {
-  return Math.hypot(a.u - b.u, a.v - b.v);
-}

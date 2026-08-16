@@ -1,6 +1,12 @@
 /**
  * sRGB transfer function and primaries.
  *
+ * There is deliberately no "linear sRGB -> chromaticity" helper here. It would
+ * be the obvious way to read the colour of a camera frame, and it would be
+ * wrong every time: the frame has already been white balanced, so its
+ * chromaticity describes the camera's guess rather than the light. Live mode
+ * uses inter-patch ratios instead, for exactly that reason.
+ *
  * Every pixel that arrives from a `<video>` frame or a `<canvas>` readback has
  * already been through the sRGB encoding curve. Averaging or ratioing those
  * values directly is meaningless — the curve has to come off first, which is
@@ -8,9 +14,7 @@
  * gamma of ~2.2 turns a true 2:1 radiance ratio into a 1.4:1 code-value ratio.
  */
 
-import type { Mat3, Vec3 } from './matrix.ts';
-import type { XY } from './chromaticity.ts';
-import { xyzToXY } from './chromaticity.ts';
+import type { Mat3 } from './matrix.ts';
 
 /**
  * sRGB electro-optical transfer function: encoded [0,1] -> linear [0,1].
@@ -54,21 +58,3 @@ export const XYZ_D65_TO_LINEAR_SRGB: Mat3 = [
   0.0556300796969936, -0.2039769588889765, 1.0569715142428786,
 ];
 
-/**
- * Chromaticity of a linear sRGB triple, interpreted as a D65-referred colour.
- *
- * This is only meaningful for a frame whose white balance has NOT been
- * altered — which is never true of an iOS camera frame. It exists for tests
- * and for interpreting deliberately-constructed colours, not for measuring
- * ambient light. Live mode uses channel ratios instead, for exactly this
- * reason.
- */
-export function linearSrgbToXY(rgb: Vec3): XY {
-  const m = LINEAR_SRGB_TO_XYZ_D65;
-  const xyz: Vec3 = [
-    m[0] * rgb[0] + m[1] * rgb[1] + m[2] * rgb[2],
-    m[3] * rgb[0] + m[4] * rgb[1] + m[5] * rgb[2],
-    m[6] * rgb[0] + m[7] * rgb[1] + m[8] * rgb[2],
-  ];
-  return xyzToXY(xyz);
-}

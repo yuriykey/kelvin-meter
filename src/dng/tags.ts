@@ -85,12 +85,3 @@ export const TIFF_TYPE_SIZE: Readonly<Record<number, number>> = {
   [TIFF_TYPE.IFD8]: 8,
 };
 
-export function tagName(tag: number): string {
-  for (const [name, value] of Object.entries(TIFF_TAG)) {
-    if (value === tag) return name;
-  }
-  for (const [name, value] of Object.entries(EXIF_TAG)) {
-    if (value === tag) return name;
-  }
-  return `Tag${tag}`;
-}
