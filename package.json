@@ -1,0 +1,24 @@
+{
+  "name": "kelvinmeter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Offline PWA that measures correlated colour temperature (CCT) of ambient light in Kelvin.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:nocheck": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/gen-icons.mjs",
+    "fixtures": "node scripts/gen-dng-fixtures.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}
