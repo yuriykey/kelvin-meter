@@ -1,0 +1,37 @@
+{
+  "note": "Ground truth for the synthetic fixtures. Regenerate with: npm run fixtures",
+  "sceneXY": {
+    "x": 0.4091,
+    "y": 0.3906
+  },
+  "sceneKelvinUsedForInterpolation": 3200,
+  "asShotNeutral": [
+    0.771676,
+    1,
+    0.43858
+  ],
+  "colorMatrix1": [
+    1.337146,
+    -0.595631,
+    -0.206999,
+    -0.704803,
+    1.607203,
+    0.068532,
+    0.000667,
+    -0.000217,
+    0.790118
+  ],
+  "colorMatrix2": [
+    1.26723,
+    -0.532525,
+    -0.186067,
+    -0.732354,
+    1.6456,
+    0.064151,
+    0.034428,
+    -0.053565,
+    0.740249
+  ],
+  "calibrationIlluminant1Kelvin": 2850,
+  "calibrationIlluminant2Kelvin": 6500
+}
