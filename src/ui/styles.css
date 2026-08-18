@@ -761,3 +761,169 @@ button:focus-visible {
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------- guide screen */
+
+/*
+ * The guide is read by someone who has never heard of colour temperature, so
+ * the type is a step larger than the rest of the app and the lines are looser.
+ * Nobody reads instructions on a phone at 14px.
+ */
+.guide-text {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 10px 0;
+}
+
+.guide-note {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  border-left: 3px solid var(--line);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 12px;
+  margin: 12px 0 0;
+}
+
+.guide-note--warn {
+  border-left-color: var(--caution);
+  color: var(--text);
+}
+
+.guide-big-answer {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ok);
+  margin: 4px 0 8px;
+}
+
+/* Numbered steps, with the number pulled out so it can be followed at a glance. */
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 10px 0;
+  padding: 0;
+}
+
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 38px;
+  margin: 12px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #06121f;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plain-list {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.plain-list > li {
+  margin: 10px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Warm-to-cool reference, so the number has something to sit against. */
+.kscale {
+  margin: 14px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.kscale__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.kscale__row:last-child {
+  border-bottom: none;
+}
+
+.kscale__swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.kscale__value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 68px;
+}
+
+.kscale__note {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+/* Technical section, folded away from beginners but not removed. */
+.disclosure {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+
+.disclosure__summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  list-style: none;
+}
+
+.disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure__summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.disclosure[open] .disclosure__summary::after {
+  content: '−';
+}
+
+.disclosure__body {
+  padding: 0 16px 16px;
+}

@@ -1,11 +1,13 @@
 /**
- * Guide screen: how to shoot the file, what each mode is actually worth, and
- * a dump of what this browser really exposes.
+ * Guide screen.
  *
- * The capability report is not a debugging leftover. What live mode can do
- * depends entirely on the device, and the honest answer to "why can't it just
- * lock white balance" is the list of constraints this browser does not
- * implement — so the app shows it rather than asserting it.
+ * Written for someone who has never heard of colour temperature and just
+ * wants a number to type into their photo program. Short sentences, common
+ * words, one idea at a time, and the steps in the order you actually do them.
+ *
+ * The technical readout the app still needs — the camera capability dump and
+ * the build version — is kept, but folded away at the bottom so it is not the
+ * first thing a beginner meets.
  */
 
 import { APP_VERSION, BUILD_TIME, GIT_SHA } from '../version.ts';
@@ -18,6 +20,23 @@ import { button, copyText, el } from './dom.ts';
 
 type Actions = App['actions'];
 
+/** A numbered list of steps. */
+function steps(...items: (string | Node)[]): HTMLElement {
+  return el('ol', { class: 'steps' }, ...items.map((item) => el('li', {}, item)));
+}
+
+function bullets(...items: (string | Node)[]): HTMLElement {
+  return el('ul', { class: 'plain-list' }, ...items.map((item) => el('li', {}, item)));
+}
+
+function para(...content: (string | Node)[]): HTMLElement {
+  return el('p', { class: 'guide-text' }, ...content);
+}
+
+function strong(text: string): HTMLElement {
+  return el('strong', {}, text);
+}
+
 export function renderAboutScreen(
   state: AppState,
   actions: Actions,
@@ -25,25 +44,204 @@ export function renderAboutScreen(
 ): HTMLElement {
   const screen = el('div', { class: 'screen' });
 
-  screen.appendChild(sectionHeader('Guide', 'How to get a number you can act on'));
+  screen.appendChild(sectionHeader('How to use this app', 'Start at the top'));
 
   screen.appendChild(
     card(
-      'Which mode to trust',
+      'What this app is for',
+      para(
+        'Light has a colour. An old light bulb makes warm, orange light. Light from a window is cooler and more blue. Your eyes fix this on their own, so you never notice. Cameras do not.',
+      ),
+      para(
+        'This app tells you the colour of the light as a number. You type that number into your photo program. Then the colours in your photo look right.',
+      ),
       el(
-        'div',
-        { class: 'prose' },
-        el('h3', {}, 'Import RAW — the accurate one'),
+        'p',
+        { class: 'guide-note' },
+        'Everything happens on this phone. Your photos and readings never leave it.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'What you need',
+      steps(
+        'An iPhone.',
         el(
-          'p',
+          'span',
           {},
-          'A DNG carries the camera’s own illuminant estimate in unprocessed camera space. That is the measurement. Typical agreement with a reference is around ±150 K once calibrated, and it is highly repeatable shot to shot.',
+          'A camera app that can take ',
+          strong('RAW'),
+          ' photos. These are also called ',
+          strong('DNG'),
+          ' files.',
         ),
-        el('h3', {}, 'Live — approximate'),
+      ),
+      para('You get RAW photos in one of two ways:'),
+      bullets(
         el(
-          'p',
+          'span',
           {},
-          'iOS gives no way to turn auto white balance off, so every frame arrives with the colour cast already removed. Live mode recovers what is left from ratios between reference patches. Expect ±400 K at best, worse in mixed lighting. Use it to choose between "warm" and "cool", not to set a final white balance.',
+          strong('iPhone Pro: '),
+          'Open Settings. Go to Camera, then Formats. Turn on Apple ProRAW. Now the Camera app has a RAW button. Tap it before you take the picture.',
+        ),
+        el(
+          'span',
+          {},
+          strong('Any iPhone: '),
+          'Get the free Adobe Lightroom app. Use the camera inside that app. It takes DNG photos for free.',
+        ),
+      ),
+      el(
+        'p',
+        { class: 'guide-note' },
+        'A normal photo will not work. Your phone already fixed the colour in a normal photo, so the light colour is gone. The app will tell you if you pick the wrong kind of photo.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'How to measure a room',
+      steps(
+        'Turn on the light you want to measure. Turn off other lights if you can.',
+        'Take a RAW photo of the room.',
+        'Open this app. Check that the button at the top says IMPORT RAW.',
+        'Tap “Choose a DNG”.',
+        'Pick the photo you just took.',
+        'Read the big number.',
+      ),
+      el('p', { class: 'guide-note' }, 'That is the whole thing. You are done.'),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'What the big number means',
+      para('The big number is the colour of the light. It is measured in Kelvin, or K.'),
+      para('A small number means warm orange light. A big number means cool blue light.'),
+      kelvinScale(),
+      para(
+        'The smaller number under it is called tint. It says if the light leans a little green or a little pink. Most lights are close to zero.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'Using the number in your photo program',
+      para(
+        'Open your photo in Lightroom, DxO PhotoLab, or Affinity Photo. Look for the white balance settings.',
+      ),
+      steps(
+        'Type the big number into the box named Temp or Temperature.',
+        'Type the smaller number into the box named Tint.',
+      ),
+      el('p', { class: 'guide-note' }, 'The numbers are made to match those boxes. Just type them in.'),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'Measuring more than one room',
+      para('Rooms often have different light. You can keep a list.'),
+      steps(
+        'After you read a number, tap SAVE.',
+        'Type the room name, like Kitchen. Tap Save.',
+        'Do the same for each room.',
+        'Tap the LOG button at the bottom to see your whole list.',
+        'Tap “Copy as text” to send the list to yourself.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'Do you need to calibrate?',
+      el(
+        'p',
+        { class: 'guide-big-answer' },
+        'No. You can use the app right now.',
+      ),
+      para(
+        'Calibrating makes the numbers a little more exact. Most people do not need it. Skip it unless the numbers look wrong to you.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'If you do want to calibrate',
+      para('You need one thing: a light where you already know the correct number.'),
+      bullets(
+        el(
+          'span',
+          {},
+          strong('Best: '),
+          'a photo light or LED panel with settings printed on it, like 3200K or 5600K. These are close to correct.',
+        ),
+        el(
+          'span',
+          {},
+          strong('Okay: '),
+          'a light bulb with the number printed on its box. These can be off by 150 or more. Not great, but better than nothing.',
+        ),
+      ),
+      para('Then do this:'),
+      steps(
+        'Tap CALIBRATE at the bottom.',
+        'Type a name, like “My iPhone”. Tap “Create profile”.',
+        'Take a RAW photo of your known light. Open it on the MEASURE screen.',
+        'Come back to CALIBRATE. Type the real number of that light. Tap “Store point”.',
+        'Do it again with a second light. One warm light and one cool light works best.',
+        'Tap “Export JSON” and save the file somewhere safe.',
+      ),
+      el(
+        'p',
+        { class: 'guide-note guide-note--warn' },
+        'Do not skip the last step. iPhones sometimes delete app data on their own. If that happens, your calibration is gone unless you saved that file.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'The LIVE button',
+      para(
+        'There is a second mode called LIVE. It points the camera at the room and guesses, with no photo needed.',
+      ),
+      para('It needs a colour checker card, and you must calibrate it first. It is only a rough guess.'),
+      el(
+        'p',
+        { class: 'guide-note' },
+        'If you do not have a colour checker card, ignore this button. IMPORT RAW is the one to use.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
+      'If you see red words',
+      para('Red words mean the app is not sure, so it will not show a number. It tells you what to fix.'),
+      bullets(
+        el(
+          'span',
+          {},
+          strong('UNSUPPORTED FILE: '),
+          'that photo is not a RAW photo. Take a new one with RAW turned on.',
+        ),
+        el(
+          'span',
+          {},
+          strong('NO CALIBRATION: '),
+          'you are in LIVE mode and have not calibrated. Tap IMPORT RAW instead.',
+        ),
+        el(
+          'span',
+          {},
+          strong('TOO DARK or CLIPPING: '),
+          'in LIVE mode, the card is too dark or too bright. Move it, or change the light.',
         ),
       ),
     ),
@@ -51,103 +249,72 @@ export function renderAboutScreen(
 
   screen.appendChild(
     card(
-      'Shooting the DNG',
-      el(
-        'div',
-        { class: 'prose' },
-        el('ul', {},
-          el('li', {}, el('strong', {}, 'iPhone Pro: '), 'turn on Apple ProRAW in Settings → Camera → Formats, then tap RAW in the Camera app.'),
-          el('li', {}, el('strong', {}, 'Any iPhone: '), 'Adobe Lightroom mobile’s built-in camera shoots DNG for free. Halide works too.'),
-          el('li', {}, el('strong', {}, 'Nikon NEF: '), 'also TIFF-based and carries the same white balance metadata, but it is not tested here and is not supported in this version.'),
-        ),
-        el(
-          'p',
-          {},
-          'Fill a good part of the frame with the light you are measuring, and keep other sources out of shot. The camera is estimating one illuminant for the whole scene; a mixed frame gives you an average of the mixture.',
-        ),
-        el(
-          'p',
-          {},
-          'A HEIC or JPEG cannot work, no matter how it was shot. The processing that made it has already removed the thing being measured.',
-        ),
+      'One tip for a good reading',
+      para(
+        'Measure one light at a time. If a lamp and a window both light the room, the app gives you a blend of the two. That blend matches neither one.',
       ),
+      para('Turn one off, or take a separate photo for each.'),
     ),
   );
 
-  screen.appendChild(
-    card(
-      'Transferring the number',
-      el(
-        'div',
-        { class: 'prose' },
-        el(
-          'p',
-          {},
-          'The Kelvin and tint values follow Adobe’s scale, the one Lightroom, Camera Raw, DxO PhotoLab and Affinity Photo put on their white balance sliders. Type them straight in.',
-        ),
-        el(
-          'p',
-          {},
-          'Duv is shown as well because it is the physically meaningful quantity: it is the signed distance from the blackbody locus, positive towards green. Two lights at the same Kelvin with different Duv look different, and no temperature slider alone will match them.',
-        ),
-      ),
-    ),
-  );
-
-  screen.appendChild(renderCapabilities(actions, live));
-  screen.appendChild(renderAbout(state));
+  screen.appendChild(renderTechnical(state, actions, live));
 
   return screen;
 }
 
-function renderCapabilities(actions: Actions, live: LiveController): HTMLElement {
-  const report = live.capabilityReport();
-  const text = formatCapabilityReport(report);
+/** A small warm-to-cool scale, so the number has something to sit against. */
+function kelvinScale(): HTMLElement {
+  const rows: [string, string, string][] = [
+    ['2700 K', '#ff9040', 'Old light bulb. Very warm and orange.'],
+    ['3200 K', '#ffb066', 'Warm indoor lamp.'],
+    ['4000 K', '#ffd9b0', 'In between. Many kitchen lights.'],
+    ['5500 K', '#f6f4f0', 'Like sunlight at midday.'],
+    ['6500 K', '#c7dcff', 'Cool and blue. A cloudy sky through a window.'],
+  ];
 
-  const missing = report.missingForMeasurement;
-  const hasTrack = report.trackCapabilities !== null;
-
-  const badges = el('div', { class: 'readout__badges', style: 'justify-content:flex-start' });
-  if (hasTrack && missing.length === 0) {
-    badges.appendChild(badge('Camera controls available', 'ok'));
-  } else {
-    for (const name of missing) badges.appendChild(badge(`no ${name}`, 'danger'));
-  }
-
-  return card(
-    'What this browser actually exposes',
-    el(
-      'p',
-      { class: 'card__note', style: 'margin-top:0' },
-      hasTrack
-        ? live.currentStream
-          ? 'Captured from the live camera track on this device.'
-          : `Captured from the camera track at ${new Date(report.capturedAt).toLocaleTimeString()}. The camera is released when this screen is open.`
-        : 'Open live mode once, then come back, to include the camera track’s own capabilities.',
-    ),
-    badges,
-    el('pre', { class: 'code-block' }, text),
-    el(
-      'div',
-      { class: 'btn-row' },
-      button('Copy report', 'btn', () => {
-        void copyText(text).then((ok) =>
-          actions.toast(ok ? 'Capability report copied.' : 'Copy was blocked by the browser.'),
-        );
-      }),
-      button('Refresh', 'btn', () => actions.refresh()),
-    ),
-    el(
-      'p',
-      { class: 'card__note' },
-      'If whiteBalanceMode and exposureMode are absent above, no web app on this device can lock the camera — including this one. That is why RAW import exists.',
+  return el(
+    'div',
+    { class: 'kscale' },
+    ...rows.map(([label, colour, description]) =>
+      el(
+        'div',
+        { class: 'kscale__row' },
+        el('span', { class: 'kscale__swatch', style: `background:${colour}` }),
+        el('span', { class: 'kscale__value' }, label),
+        el('span', { class: 'kscale__note' }, description),
+      ),
     ),
   );
 }
 
-function renderAbout(state: AppState): HTMLElement {
-  return card(
-    'About',
+/**
+ * Everything a beginner does not need, folded away.
+ *
+ * The camera capability report stays because it is the only honest answer to
+ * "why can this app not just lock the white balance" — it lists what this
+ * device actually offers, rather than asserting it.
+ */
+function renderTechnical(
+  state: AppState,
+  actions: Actions,
+  live: LiveController,
+): HTMLElement {
+  const report = live.capabilityReport();
+  const text = formatCapabilityReport(report);
+  const hasTrack = report.trackCapabilities !== null;
+
+  const badges = el('div', { class: 'readout__badges', style: 'justify-content:flex-start' });
+  if (hasTrack && report.missingForMeasurement.length === 0) {
+    badges.appendChild(badge('Camera controls available', 'ok'));
+  } else {
+    for (const name of report.missingForMeasurement) {
+      badges.appendChild(badge(`no ${name}`, 'danger'));
+    }
+  }
+
+  const body = el(
+    'div',
+    { class: 'disclosure__body' },
     el(
       'dl',
       { class: 'detail-list' },
@@ -167,7 +334,33 @@ function renderAbout(state: AppState): HTMLElement {
     el(
       'p',
       { class: 'card__note' },
-      'Everything runs on this device. No network requests are made after the app is installed, and no measurement, file or image ever leaves the phone.',
+      hasTrack
+        ? 'Camera capabilities, captured from a live track on this device.'
+        : 'Open LIVE once, then come back, to include the camera track’s own capabilities.',
     ),
+    badges,
+    el('pre', { class: 'code-block' }, text),
+    el(
+      'div',
+      { class: 'btn-row' },
+      button('Copy report', 'btn', () => {
+        void copyText(text).then((ok) =>
+          actions.toast(ok ? 'Report copied.' : 'Copy was blocked by the browser.'),
+        );
+      }),
+      button('Refresh', 'btn', () => actions.refresh()),
+    ),
+    el(
+      'p',
+      { class: 'card__note' },
+      'If whiteBalanceMode and exposureMode are missing above, no web app on this device can lock the camera, including this one. That is why RAW import exists.',
+    ),
+  );
+
+  return el(
+    'details',
+    { class: 'disclosure' },
+    el('summary', { class: 'disclosure__summary' }, 'Technical details'),
+    body,
   );
 }
