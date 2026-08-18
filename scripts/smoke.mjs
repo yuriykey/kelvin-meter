@@ -234,15 +234,29 @@ try {
   await pause(2500);
 
   check('viewfinder is shown', (await page.locator('.viewfinder').count()) === 1);
-  check('four guide boxes', (await page.locator('.guide').count()) === 4);
+  check('a full 24-cell card grid is drawn', (await page.locator('.grid-cell').count()) === 24);
   check(
-    'guide boxes are labelled with the patch to find on the card',
-    (await page.locator('.guide__label').allTextContents()).join(',') ===
-      'Orange,Cyan,Green,Grey',
+    'exactly four cells are marked as sampled',
+    (await page.locator('.grid-cell--sampled').count()) === 4,
   );
   check(
-    'guide boxes are numbered to match the legend',
-    (await page.locator('.guide__index').allTextContents()).join(',') === '1,2,3,4',
+    'sampled cells name the patch to line up',
+    (await page.locator('.grid-cell__label').allTextContents()).join(',') ===
+      'Blue,Green,Red,Grey',
+  );
+  // The four patches must be lined up simultaneously by holding one rigid
+  // card, so they have to sit in a block on that card, not scattered over it.
+  check(
+    'the sampled cells sit in one block, so a rigid card can reach them all',
+    await page.evaluate(() => {
+      const cells = [...document.querySelectorAll('.grid-cell--sampled')];
+      const rects = cells.map((n) => n.getBoundingClientRect());
+      const width = rects[0].width;
+      const height = rects[0].height;
+      const spanX = Math.max(...rects.map((r) => r.right)) - Math.min(...rects.map((r) => r.left));
+      const spanY = Math.max(...rects.map((r) => r.bottom)) - Math.min(...rects.map((r) => r.top));
+      return spanX <= width * 3.05 && spanY <= height * 2.05;
+    }),
   );
   check(
     'the squares are explained before they are shown',
@@ -251,9 +265,23 @@ try {
 
   const video = await page.evaluate(() => {
     const node = document.querySelector('.viewfinder video');
-    return node ? { width: node.videoWidth, paused: node.paused } : null;
+    if (!node) return null;
+    const box = node.parentElement.getBoundingClientRect();
+    return {
+      width: node.videoWidth,
+      paused: node.paused,
+      videoAspect: node.videoWidth / node.videoHeight,
+      boxAspect: box.width / box.height,
+    };
   });
   check('camera stream is playing', (video?.width ?? 0) > 0 && video?.paused === false);
+  // If these disagree the video is cropped to fit, and the overlay ends up
+  // drawn over different pixels than the ones being sampled.
+  check(
+    'the preview box matches the camera shape, so nothing is cropped',
+    Math.abs((video?.videoAspect ?? 0) - (video?.boxAspect ?? 0)) < 0.02,
+    `video ${video?.videoAspect?.toFixed(3)} vs box ${video?.boxAspect?.toFixed(3)}`,
+  );
 
   // With no card and no profile, the precondition has to win. Being told to
   // "angle the card away from the light" first is advice about a card this

@@ -4,7 +4,8 @@ import {
   CLIPPING_CODE,
   LOW_SIGNAL_CODE,
   assessPatch,
-  defaultGuideRects,
+  cardGrid,
+  cellRect,
   samplePatch,
 } from './sampling.ts';
 import { REFERENCE_CARDS, findCard, patchForRole } from './cards.ts';
@@ -325,6 +326,37 @@ describe('reference cards', () => {
     }
   });
 
+  it('keeps the sampled patches close together on the card', () => {
+    // The ratio method only cancels the auto white balance gains if both
+    // patches in a ratio got the same treatment, and iOS varies its tone
+    // mapping across the frame. Patches spread over the whole chart are
+    // patches spread over the whole frame.
+    for (const card of REFERENCE_CARDS) {
+      const rows = card.patches.map((patch) => patch.row);
+      const columns = card.patches.map((patch) => patch.column);
+      expect(Math.max(...rows) - Math.min(...rows), card.id).toBeLessThanOrEqual(1);
+      expect(Math.max(...columns) - Math.min(...columns), card.id).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('places every patch inside the card it belongs to', () => {
+    for (const card of REFERENCE_CARDS) {
+      for (const patch of card.patches) {
+        expect(patch.row).toBeGreaterThanOrEqual(1);
+        expect(patch.row).toBeLessThanOrEqual(card.rows);
+        expect(patch.column).toBeGreaterThanOrEqual(1);
+        expect(patch.column).toBeLessThanOrEqual(card.columns);
+      }
+    }
+  });
+
+  it('gives each role a distinct cell', () => {
+    for (const card of REFERENCE_CARDS) {
+      const cells = card.patches.map((patch) => `${patch.row}:${patch.column}`);
+      expect(new Set(cells).size, card.id).toBe(cells.length);
+    }
+  });
+
   it('looks a card up by id', () => {
     expect(findCard('cc-passport')?.name).toContain('Passport');
     expect(findCard('nope')).toBeNull();
@@ -332,24 +364,66 @@ describe('reference cards', () => {
   });
 });
 
-describe('guide box layout', () => {
-  it('lays four non-overlapping boxes across the middle of the frame', () => {
-    const rects = defaultGuideRects(4);
-    expect(rects).toHaveLength(4);
-    for (const rect of rects) {
-      expect(rect.x).toBeGreaterThanOrEqual(0);
-      expect(rect.x + rect.width).toBeLessThanOrEqual(1);
-      expect(rect.y).toBeGreaterThanOrEqual(0);
-      expect(rect.y + rect.height).toBeLessThanOrEqual(1);
-    }
-    for (let i = 1; i < rects.length; i++) {
-      expect(rects[i]!.x).toBeGreaterThan(rects[i - 1]!.x + rects[i - 1]!.width);
+describe('card alignment grid', () => {
+  it('lays out one cell per patch on the card', () => {
+    for (const card of REFERENCE_CARDS) {
+      const grid = cardGrid(card.rows, card.columns, 16 / 9);
+      expect(grid.rows * grid.columns).toBe(card.rows * card.columns);
     }
   });
 
-  it('keeps the boxes adjacent, since iOS tone mapping varies across the frame', () => {
-    const rects = defaultGuideRects(4);
-    const span = rects[3]!.x + rects[3]!.width - rects[0]!.x;
-    expect(span).toBeLessThan(0.7);
+  it('keeps the whole grid inside the frame', () => {
+    for (const aspect of [4 / 3, 16 / 9, 3 / 4, 1]) {
+      const grid = cardGrid(4, 6, aspect);
+      expect(grid.x).toBeGreaterThanOrEqual(0);
+      expect(grid.y).toBeGreaterThanOrEqual(0);
+      expect(grid.x + grid.width).toBeLessThanOrEqual(1.000001);
+      expect(grid.y + grid.height).toBeLessThanOrEqual(1.000001);
+    }
+  });
+
+  it('makes cells square on screen, whatever the frame shape', () => {
+    for (const aspect of [4 / 3, 16 / 9, 1]) {
+      const grid = cardGrid(4, 6, aspect);
+      const cellWidthPixels = (grid.width / grid.columns) * aspect;
+      const cellHeightPixels = grid.height / grid.rows;
+      expect(cellWidthPixels).toBeCloseTo(cellHeightPixels, 9);
+    }
+  });
+
+  it('puts every sample well inside its own cell', () => {
+    const grid = cardGrid(4, 6, 16 / 9);
+    const cellWidth = grid.width / grid.columns;
+    const cellHeight = grid.height / grid.rows;
+    for (let row = 1; row <= 4; row++) {
+      for (let column = 1; column <= 6; column++) {
+        const rect = cellRect(grid, row, column);
+        const left = grid.x + (column - 1) * cellWidth;
+        const top = grid.y + (row - 1) * cellHeight;
+        expect(rect.x).toBeGreaterThan(left);
+        expect(rect.y).toBeGreaterThan(top);
+        expect(rect.x + rect.width).toBeLessThan(left + cellWidth);
+        expect(rect.y + rect.height).toBeLessThan(top + cellHeight);
+      }
+    }
+  });
+
+  it('never overlaps two sampled cells', () => {
+    const grid = cardGrid(4, 6, 16 / 9);
+    for (const card of REFERENCE_CARDS) {
+      const rects = card.patches.map((patch) => cellRect(grid, patch.row, patch.column));
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          const a = rects[i]!;
+          const b = rects[j]!;
+          const disjoint =
+            a.x + a.width <= b.x ||
+            b.x + b.width <= a.x ||
+            a.y + a.height <= b.y ||
+            b.y + b.height <= a.y;
+          expect(disjoint, `${card.id} patches ${i} and ${j} overlap`).toBe(true);
+        }
+      }
+    }
   });
 });

@@ -11,27 +11,27 @@ import {
   CameraError,
   FrameGrabber,
   StabilityTracker,
+  cardGrid,
+  cellRect,
   computeFeatures,
-  defaultGuideRects,
   describeCapabilities,
   samplePatch,
   startCamera,
   stopStream,
   type CameraCapabilityReport,
+  type CardGrid,
   type FeatureResult,
   type PatchReading,
+  type ReferenceCard,
   type SampleRect,
 } from '../live/index.ts';
-import type { PatchRole } from '../live/index.ts';
-
-/** Roles in the order the guide boxes appear, left to right. */
-export const GUIDE_ROLES: readonly PatchRole[] = ['warm', 'cool', 'green', 'neutral'];
+import { REFERENCE_CARDS } from '../live/index.ts';
 
 export interface LiveFrame {
   readonly features: FeatureResult;
   readonly featureSpread: number;
   readonly stabilityReady: boolean;
-  readonly rects: readonly SampleRect[];
+  readonly grid: CardGrid;
 }
 
 export type LiveFrameHandler = (frame: LiveFrame) => void;
@@ -46,8 +46,16 @@ export class LiveController {
   private grabber = new FrameGrabber();
   private tracker = new StabilityTracker();
   private timer: number | null = null;
-  private rects: SampleRect[] = defaultGuideRects(GUIDE_ROLES.length);
   private running = false;
+  /** Which card's layout the grid is drawn for. */
+  private card: ReferenceCard = REFERENCE_CARDS[0]!;
+  /**
+   * Frame aspect of the most recent grab. The grid has to be laid out for the
+   * frame the pixels actually come from, not for the shape of the box on
+   * screen; those were different, and the overlay was pointing at pixels the
+   * app was not reading.
+   */
+  private frameAspect = 4 / 3;
   /**
    * Capability snapshot taken while the track was live.
    *
@@ -79,8 +87,26 @@ export class LiveController {
     return this.stream;
   }
 
-  get guideRects(): readonly SampleRect[] {
-    return this.rects;
+  setCard(card: ReferenceCard): void {
+    this.card = card;
+  }
+
+  get activeCard(): ReferenceCard {
+    return this.card;
+  }
+
+  /** Grid the overlay must draw, in frame coordinates. */
+  get grid(): CardGrid {
+    return cardGrid(this.card.rows, this.card.columns, this.frameAspect);
+  }
+
+  /** Aspect ratio of the frames being sampled, for sizing the preview box. */
+  get videoAspect(): number {
+    return this.frameAspect;
+  }
+
+  sampleRectFor(row: number, column: number): SampleRect {
+    return cellRect(this.grid, row, column);
   }
 
   /** Live report if the camera is running, otherwise the last one captured. */
@@ -140,9 +166,17 @@ export class LiveController {
     const frame = this.grabber.grab(this.video);
     if (!frame) return;
 
-    const readings: PatchReading[] = GUIDE_ROLES.map((role, index) => ({
-      role,
-      sample: samplePatch(frame.data, frame.width, frame.height, this.rects[index]!),
+    this.frameAspect = frame.width / frame.height;
+    const grid = this.grid;
+
+    const readings: PatchReading[] = this.card.patches.map((patch) => ({
+      role: patch.role,
+      sample: samplePatch(
+        frame.data,
+        frame.width,
+        frame.height,
+        cellRect(grid, patch.row, patch.column),
+      ),
     }));
 
     const features = computeFeatures(readings);
@@ -154,7 +188,7 @@ export class LiveController {
       features,
       featureSpread: this.tracker.standardDeviation,
       stabilityReady: this.tracker.ready,
-      rects: this.rects,
+      grid,
     });
   }
 }

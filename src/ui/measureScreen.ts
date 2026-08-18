@@ -2,10 +2,16 @@
  * The measure screen: the one the app exists for.
  */
 
-import { REFERENCE_CARDS, findCard, secureContextOk } from '../live/index.ts';
+import {
+  REFERENCE_CARDS,
+  findCard,
+  patchLocation,
+  secureContextOk,
+  type ReferenceCard,
+} from '../live/index.ts';
 import type { AppState } from './app.ts';
 import type { App } from './app.ts';
-import { GUIDE_ROLES, type LiveController } from './liveController.ts';
+import type { LiveController } from './liveController.ts';
 import { badge, card, detailList, readout } from './components.ts';
 import { button, el, on } from './dom.ts';
 import { VERSION_LABEL } from '../version.ts';
@@ -153,78 +159,123 @@ function renderLiveControls(
     (item) => item.id === state.settings.activeLiveProfileId,
   );
   const cardSpec = findCard(profile?.cardId ?? null) ?? REFERENCE_CARDS[0]!;
+  live.setCard(cardSpec);
   const ready = (profile?.points.length ?? 0) >= 2;
 
-  // Someone arriving here for the first time sees four unexplained squares on
-  // a camera preview. Say what they are, and what they need, before showing
-  // them - and give them the way back out, because without a card this mode
-  // cannot produce anything at all.
+  // Someone arriving here for the first time sees a grid on a camera preview.
+  // Say what it is, and what they need, before showing it - and give them the
+  // way back out, because without a card this mode cannot produce anything.
   if (!ready) {
     container.appendChild(renderLiveExplainer(actions, Boolean(profile)));
   }
 
-  const viewfinder = el('div', { class: 'viewfinder' });
-  viewfinder.appendChild(live.video);
-
-  const guides = el('div', { class: 'viewfinder__guides' });
-  const problemRoles = new Set(
-    (state.liveFrame?.features.problems ?? []).map((problem) => problem.role),
-  );
-
-  live.guideRects.forEach((rect, index) => {
-    const role = GUIDE_ROLES[index]!;
-    const patch = cardSpec.patches.find((item) => item.role === role);
-    const box = el('div', {
-      class: problemRoles.has(role) ? 'guide guide--bad' : 'guide',
-      style:
-        `left:${rect.x * 100}%;top:${rect.y * 100}%;` +
-        `width:${rect.width * 100}%;height:${rect.height * 100}%`,
-    });
-    // The name of the patch on the physical card, not the abstract role. Told
-    // to line a box up with "warm" you have to work out what that means;
-    // told "Orange" you just find the orange square.
-    box.appendChild(el('span', { class: 'guide__index' }, String(index + 1)));
-    box.appendChild(el('span', { class: 'guide__label' }, patch?.shortName ?? role));
-    guides.appendChild(box);
+  // The preview box takes the camera's own shape. It used to be locked to 4:3
+  // with object-fit: cover while the camera delivered 16:9, so the sides were
+  // cropped away on screen - the overlay was drawn over one framing and the
+  // pixels were read from another.
+  const viewfinder = el('div', {
+    class: 'viewfinder',
+    style: `aspect-ratio:${live.videoAspect}`,
   });
-  viewfinder.appendChild(guides);
+  viewfinder.appendChild(live.video);
+  viewfinder.appendChild(renderCardGrid(state, live, cardSpec));
   container.appendChild(viewfinder);
 
   const legend = el('div', { class: 'patch-legend' });
-  GUIDE_ROLES.forEach((role, index) => {
-    const patch = cardSpec.patches.find((item) => item.role === role);
+  cardSpec.patches.forEach((patch) => {
     legend.appendChild(
       el(
         'div',
         { class: 'patch-legend__item' },
-        el('span', { class: 'patch-legend__number' }, String(index + 1)),
         el('span', {
           class: 'patch-legend__swatch',
-          style: `background:${patch?.swatch ?? '#888'}`,
+          style: `background:${patch.swatch}`,
         }),
-        el(
-          'span',
-          {},
-          patch ? `${patch.patchName} — ${patch.location}` : '—',
-        ),
+        el('span', {}, `${patch.patchName} — ${patchLocation(patch)}`),
       ),
     );
   });
 
   container.appendChild(
     card(
-      `Line the boxes up with your ${cardSpec.name}`,
-      legend,
-      el('p', { class: 'card__note' }, cardSpec.note),
+      `Fill the grid with your ${cardSpec.name}`,
       el(
         'p',
-        { class: 'card__note' },
-        'Keep the patches adjacent and similar in brightness. iOS varies its tone mapping across the frame, and the ratio method does not cancel that.',
+        { class: 'guide-text', style: 'margin-top:0' },
+        'Line the whole card up inside the grid, one patch per box. The app reads the four highlighted boxes.',
       ),
+      legend,
+      el('p', { class: 'card__note' }, cardSpec.note),
     ),
   );
 
   return container;
+}
+
+/**
+ * The alignment grid: one cell per patch on the card, with the four sampled
+ * cells picked out.
+ *
+ * Drawing the whole card rather than four floating boxes is what makes this
+ * possible to do at all. The four patches the method needs are not in a
+ * straight line on any chart, so a row of four boxes asked the user to line
+ * up something that cannot be lined up.
+ */
+function renderCardGrid(
+  state: AppState,
+  live: LiveController,
+  cardSpec: ReferenceCard,
+): HTMLElement {
+  const grid = state.liveFrame?.grid ?? live.grid;
+  const overlay = el('div', { class: 'viewfinder__guides' });
+
+  const percent = (value: number): string => `${value * 100}%`;
+  const cellWidth = grid.width / grid.columns;
+  const cellHeight = grid.height / grid.rows;
+
+  const problemRoles = new Set(
+    (state.liveFrame?.features.problems ?? []).map((problem) => problem.role),
+  );
+  const sampled = new Map(
+    cardSpec.patches.map((patch) => [`${patch.row}:${patch.column}`, patch]),
+  );
+
+  for (let row = 1; row <= grid.rows; row++) {
+    for (let column = 1; column <= grid.columns; column++) {
+      const patch = sampled.get(`${row}:${column}`);
+      const bad = patch ? problemRoles.has(patch.role) : false;
+      const classes = ['grid-cell'];
+      if (patch) classes.push('grid-cell--sampled');
+      if (bad) classes.push('grid-cell--bad');
+
+      const cell = el('div', {
+        class: classes.join(' '),
+        style:
+          `left:${percent(grid.x + (column - 1) * cellWidth)};` +
+          `top:${percent(grid.y + (row - 1) * cellHeight)};` +
+          `width:${percent(cellWidth)};height:${percent(cellHeight)}`,
+      });
+      if (patch) {
+        // Labels sit above their cell, so one directly under another sampled
+        // cell would land on top of it. Flip those below instead.
+        const stackedUnder = sampled.has(`${row - 1}:${column}`);
+        cell.appendChild(
+          el(
+            'span',
+            {
+              class: stackedUnder
+                ? 'grid-cell__label grid-cell__label--below'
+                : 'grid-cell__label',
+            },
+            patch.shortName,
+          ),
+        );
+      }
+      overlay.appendChild(cell);
+    }
+  }
+
+  return overlay;
 }
 
 /** Plain-language answer to "what are these squares?". */

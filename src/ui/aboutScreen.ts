@@ -241,13 +241,16 @@ export function renderAboutScreen(
         'There is a second mode called LIVE. It points the camera at the room and guesses, with no photo needed.',
       ),
       para(
-        'When you tap it you see four squares on the screen. They are not measuring the room. They are aiming marks.',
+        'When you tap it you see a grid on the screen. The grid is not measuring the room. It is an aiming guide.',
       ),
       para(
-        'They need a colour checker card. That is a printed card covered in small coloured squares, sold for checking colour in photos. You hold it in front of the camera and line each square on screen up with the colour named under it.',
+        'It needs a colour checker card. That is a printed card covered in small coloured squares, sold for checking colour in photos.',
       ),
       para(
-        'The app then compares those colours to each other. That comparison is what tells it about the light.',
+        'Hold the card up in front of the camera and line the whole card up inside the grid, one square of the card in each box of the grid. Four boxes are drawn brighter than the rest. Those are the ones the app reads.',
+      ),
+      para(
+        'The app then compares those four colours to each other. That comparison is what tells it about the light.',
       ),
       el(
         'p',

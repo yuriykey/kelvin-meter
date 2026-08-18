@@ -131,24 +131,64 @@ export function assessPatch(sample: PatchSample): PatchQuality {
 }
 
 /**
- * Guide box layout: four square sample regions in a row across the middle of
- * the frame.
+ * Geometry of the card-alignment grid.
  *
- * They are kept adjacent and the same size on purpose. iOS applies spatially
- * varying tone mapping, which the ratio method does not cancel — the further
- * apart the patches sit, and the more the local brightness differs between
- * them, the more of that variation leaks into the reading.
+ * The user lines the whole card up inside a grid drawn over the preview, and
+ * the app samples the cells it needs. Generating the sample rectangles from
+ * the card's own row and column numbers is what keeps the boxes and the
+ * written instructions from drifting apart — they come from one source.
  */
-export function defaultGuideRects(count = 4): SampleRect[] {
-  const size = 0.12;
-  const gap = 0.03;
-  const totalWidth = count * size + (count - 1) * gap;
-  const startX = (1 - totalWidth) / 2;
-  const y = 0.5 - size / 2;
-  return Array.from({ length: count }, (_, index) => ({
-    x: startX + index * (size + gap),
-    y,
-    width: size,
-    height: size,
-  }));
+export interface CardGrid {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly rows: number;
+  readonly columns: number;
+}
+
+/** Fraction of the frame the grid is allowed to occupy. */
+const GRID_MARGIN = 0.9;
+/** Fraction of a cell that is actually sampled, keeping clear of the borders. */
+export const CELL_SAMPLE_FRACTION = 0.5;
+
+/**
+ * Lays a rows x columns grid of visually square cells over the frame.
+ *
+ * `frameAspect` is the frame's width divided by its height. Cells are square
+ * on screen rather than in normalised coordinates, because a grid of squashed
+ * rectangles is not something you can line a card up against.
+ */
+export function cardGrid(rows: number, columns: number, frameAspect: number): CardGrid {
+  const safeAspect = Number.isFinite(frameAspect) && frameAspect > 0 ? frameAspect : 4 / 3;
+  // Cell width w in normalised units; height must be w * aspect to look square.
+  const widthLimited = GRID_MARGIN / columns;
+  const heightLimited = GRID_MARGIN / (rows * safeAspect);
+  const cellWidth = Math.min(widthLimited, heightLimited);
+  const cellHeight = cellWidth * safeAspect;
+
+  const width = cellWidth * columns;
+  const height = cellHeight * rows;
+  return { x: (1 - width) / 2, y: (1 - height) / 2, width, height, rows, columns };
+}
+
+/** Sample rectangle for one 1-based cell of the grid. */
+export function cellRect(
+  grid: CardGrid,
+  row: number,
+  column: number,
+  fraction = CELL_SAMPLE_FRACTION,
+): SampleRect {
+  const cellWidth = grid.width / grid.columns;
+  const cellHeight = grid.height / grid.rows;
+  const centreX = grid.x + (column - 0.5) * cellWidth;
+  const centreY = grid.y + (row - 0.5) * cellHeight;
+  const width = cellWidth * fraction;
+  const height = cellHeight * fraction;
+  return { x: centreX - width / 2, y: centreY - height / 2, width, height };
+}
+
+/** Outline of one whole cell, for drawing the grid. */
+export function cellOutline(grid: CardGrid, row: number, column: number): SampleRect {
+  return cellRect(grid, row, column, 1);
 }
