@@ -172,13 +172,42 @@ export function renderAboutScreen(
 
   screen.appendChild(
     card(
+      'Best way: use a colour checker card',
+      para(
+        'If you own a colour checker card, this is the most accurate way to calibrate, and it beats a light bulb’s printed rating.',
+      ),
+      para(
+        'The card does not tell you the colour of the light by itself. What it does is let your photo program work the colour out exactly. Then you tell this app that answer.',
+      ),
+      steps(
+        'Stand the card up in the room, lit by the light you want to measure.',
+        'Take a RAW photo with the card in the picture.',
+        'Open that photo in your photo program.',
+        'Find the white balance eyedropper tool. Click it on the second-lightest grey square on the card. Not the pure white one, and not a dark one.',
+        'Your program now shows the correct Temp and Tint. Write both down.',
+        'Open the same photo in this app on the MEASURE screen.',
+        'Go to CALIBRATE, type in the Temp number you wrote down, and tap “Store point”.',
+        'Do the whole thing again in a room with very different light. One warm room and one cool room works best.',
+      ),
+      el(
+        'p',
+        { class: 'guide-note' },
+        'This makes the app agree with your photo program. That is exactly what you want, because your photo program is where the number gets typed in.',
+      ),
+    ),
+  );
+
+  screen.appendChild(
+    card(
       'If you do want to calibrate',
-      para('You need one thing: a light where you already know the correct number.'),
+      para(
+        'No colour checker card? Then you need a light where you already know the correct number.',
+      ),
       bullets(
         el(
           'span',
           {},
-          strong('Best: '),
+          strong('Good: '),
           'a photo light or LED panel with settings printed on it, like 3200K or 5600K. These are close to correct.',
         ),
         el(

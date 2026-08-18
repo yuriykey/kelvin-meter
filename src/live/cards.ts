@@ -42,7 +42,7 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
   {
     id: 'cc-classic',
     name: 'ColorChecker Classic / Mini',
-    note: 'Rows numbered from the top, columns from the left, card in landscape.',
+    note: 'Hold the card in landscape with the row of greys along the BOTTOM and the white square at the bottom left. Rows are counted from the top, columns from the left. Upside down, every box lands on the wrong patch.',
     patches: [
       { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
       { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
@@ -53,7 +53,7 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
   {
     id: 'cc-passport',
     name: 'ColorChecker Passport (classic target)',
-    note: 'Use the 24-patch classic target page, not the creative enhancement page.',
+    note: 'Use the 24-patch side, not the side with the warming and cooling patches. Hold it in landscape with the row of greys along the BOTTOM and the white square at the bottom left. Upside down, every box lands on the wrong patch.',
     patches: [
       { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
       { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
@@ -64,7 +64,7 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
   {
     id: 'spydercheckr-24',
     name: 'SpyderCheckr 24',
-    note: 'Card in landscape with the neutral ramp along the bottom row.',
+    note: 'Hold the card in landscape with the grey ramp along the BOTTOM row. Rows are counted from the top, columns from the left.',
     patches: [
       { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 4', swatch: '#e1802f' },
       { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 2, column 1', swatch: '#0d8fc4' },
