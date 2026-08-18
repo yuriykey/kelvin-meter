@@ -186,6 +186,23 @@ export function readingFromLive(
     (problem) => problem.problem === 'missing-patch' || problem.problem === 'no-pixels',
   );
 
+  // Order matters: `blockingWarning` shows the first blocking warning, and
+  // this one is a precondition rather than a complaint about the frame. Told
+  // to "angle the card away from the light" first, someone who owns no card
+  // and has never calibrated is being given advice they cannot act on for a
+  // problem that is not the one stopping them.
+  const hasCurve = (profile?.points.length ?? 0) >= 2;
+  if (!hasCurve) {
+    warnings.push({
+      kind: 'NO CALIBRATION',
+      detail:
+        profile === null
+          ? 'Live mode needs a colour checker card and a calibration profile before it can report a temperature. Use IMPORT RAW instead if you do not have a card.'
+          : `"${profile.name}" needs at least two calibration points before it can report a temperature.`,
+      blocking: true,
+    });
+  }
+
   if (clipping.length > 0) {
     const subject = describeRoles(clipping.map((p) => p.role));
     warnings.push({
@@ -207,18 +224,6 @@ export function readingFromLive(
     warnings.push({
       kind: 'ALIGN CARD',
       detail: `${subject.text} ${subject.verb} not readable. Line the guide boxes up with the patches named below.`,
-      blocking: true,
-    });
-  }
-
-  const hasCurve = (profile?.points.length ?? 0) >= 2;
-  if (!hasCurve) {
-    warnings.push({
-      kind: 'NO CALIBRATION',
-      detail:
-        profile === null
-          ? 'Live mode has no profile selected. Its feature value is not a temperature until it is calibrated against known sources.'
-          : `"${profile.name}" needs at least two calibration points before it can report a temperature.`,
       blocking: true,
     });
   }

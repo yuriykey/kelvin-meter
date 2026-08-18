@@ -174,7 +174,7 @@ describe('readings from live mode', () => {
     expect(reading.calibrated).toBe(true);
   });
 
-  it('blocks on clipping before anything else', () => {
+  it('blocks on clipping once calibration is in place', () => {
     const reading = readingFromLive(
       {
         features: features({ ok: false, problems: [problem('green', 'clipping')] }),
@@ -184,6 +184,56 @@ describe('readings from live mode', () => {
       calibrated,
     );
     expect(blockingWarning(reading)?.kind).toBe('CLIPPING');
+  });
+
+  describe('warning priority', () => {
+    // Someone who owns no colour checker card and has never calibrated will
+    // trip every patch check at once. Telling them to "angle the card away
+    // from the light" first is advice about a card they do not have, for a
+    // problem that is not the one stopping them.
+    it.each(['clipping', 'too-dark', 'missing-patch'] as const)(
+      'reports NO CALIBRATION ahead of %s when there is no profile',
+      (kind) => {
+        const reading = readingFromLive(
+          {
+            features: features({
+              ok: false,
+              problems: [
+                problem('warm', kind),
+                problem('cool', kind),
+                problem('green', kind),
+                problem('neutral', kind),
+              ],
+            }),
+            featureSpread: 0,
+            stabilityReady: false,
+          },
+          null,
+        );
+        expect(blockingWarning(reading)?.kind).toBe('NO CALIBRATION');
+      },
+    );
+
+    it('points an uncalibrated user at the mode that does work', () => {
+      const reading = readingFromLive(
+        { features: features(), featureSpread: 0, stabilityReady: false },
+        null,
+      );
+      expect(blockingWarning(reading)!.detail).toMatch(/IMPORT RAW/);
+      expect(blockingWarning(reading)!.detail).toMatch(/colour checker card/i);
+    });
+
+    it('still lists the patch problems underneath, so nothing is hidden', () => {
+      const reading = readingFromLive(
+        {
+          features: features({ ok: false, problems: [problem('green', 'clipping')] }),
+          featureSpread: 0,
+          stabilityReady: false,
+        },
+        null,
+      );
+      expect(reading.warnings.map((w) => w.kind)).toEqual(['NO CALIBRATION', 'CLIPPING']);
+    });
   });
 
   describe('warning wording', () => {

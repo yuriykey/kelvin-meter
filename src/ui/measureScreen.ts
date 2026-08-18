@@ -149,6 +149,20 @@ function renderLiveControls(
     return container;
   }
 
+  const profile = state.profiles.find(
+    (item) => item.id === state.settings.activeLiveProfileId,
+  );
+  const cardSpec = findCard(profile?.cardId ?? null) ?? REFERENCE_CARDS[0]!;
+  const ready = (profile?.points.length ?? 0) >= 2;
+
+  // Someone arriving here for the first time sees four unexplained squares on
+  // a camera preview. Say what they are, and what they need, before showing
+  // them - and give them the way back out, because without a card this mode
+  // cannot produce anything at all.
+  if (!ready) {
+    container.appendChild(renderLiveExplainer(actions, Boolean(profile)));
+  }
+
   const viewfinder = el('div', { class: 'viewfinder' });
   viewfinder.appendChild(live.video);
 
@@ -159,42 +173,47 @@ function renderLiveControls(
 
   live.guideRects.forEach((rect, index) => {
     const role = GUIDE_ROLES[index]!;
+    const patch = cardSpec.patches.find((item) => item.role === role);
     const box = el('div', {
       class: problemRoles.has(role) ? 'guide guide--bad' : 'guide',
       style:
         `left:${rect.x * 100}%;top:${rect.y * 100}%;` +
         `width:${rect.width * 100}%;height:${rect.height * 100}%`,
     });
-    box.appendChild(el('span', { class: 'guide__label' }, role));
+    // The name of the patch on the physical card, not the abstract role. Told
+    // to line a box up with "warm" you have to work out what that means;
+    // told "Orange" you just find the orange square.
+    box.appendChild(el('span', { class: 'guide__index' }, String(index + 1)));
+    box.appendChild(el('span', { class: 'guide__label' }, patch?.shortName ?? role));
     guides.appendChild(box);
   });
   viewfinder.appendChild(guides);
   container.appendChild(viewfinder);
 
-  const profile = state.profiles.find(
-    (item) => item.id === state.settings.activeLiveProfileId,
-  );
-  const cardSpec = findCard(profile?.cardId ?? null) ?? REFERENCE_CARDS[0]!;
-
   const legend = el('div', { class: 'patch-legend' });
-  for (const role of GUIDE_ROLES) {
+  GUIDE_ROLES.forEach((role, index) => {
     const patch = cardSpec.patches.find((item) => item.role === role);
     legend.appendChild(
       el(
         'div',
         { class: 'patch-legend__item' },
+        el('span', { class: 'patch-legend__number' }, String(index + 1)),
         el('span', {
           class: 'patch-legend__swatch',
           style: `background:${patch?.swatch ?? '#888'}`,
         }),
-        el('span', {}, `${role}: ${patch ? `${patch.patchName}, ${patch.location}` : '—'}`),
+        el(
+          'span',
+          {},
+          patch ? `${patch.patchName} — ${patch.location}` : '—',
+        ),
       ),
     );
-  }
+  });
 
   container.appendChild(
     card(
-      `Align to ${cardSpec.name}`,
+      `Line the boxes up with your ${cardSpec.name}`,
       legend,
       el('p', { class: 'card__note' }, cardSpec.note),
       el(
@@ -206,6 +225,35 @@ function renderLiveControls(
   );
 
   return container;
+}
+
+/** Plain-language answer to "what are these squares?". */
+function renderLiveExplainer(actions: Actions, hasProfile: boolean): HTMLElement {
+  return card(
+    'What are the squares?',
+    el(
+      'p',
+      { class: 'guide-text', style: 'margin-top:0' },
+      'This mode needs a colour checker card. That is a printed card covered in small coloured squares. Photographers use them to check colour.',
+    ),
+    el(
+      'p',
+      { class: 'guide-text' },
+      'You hold the card up in front of the camera and line each box on screen up with the colour named under it. The app compares those colours to each other to work out the light.',
+    ),
+    el(
+      'p',
+      { class: 'guide-note guide-note--warn' },
+      hasProfile
+        ? 'This profile still needs two calibration points before it can show a number. Until then no reading will appear.'
+        : 'If you do not have one of these cards, this mode cannot work. Use IMPORT RAW instead — it is the accurate one anyway.',
+    ),
+    el(
+      'div',
+      { class: 'btn-row' },
+      button('Use IMPORT RAW instead', 'btn btn--primary', () => actions.setMode('raw')),
+    ),
+  );
 }
 
 /* ------------------------------------------------------------ hold / save */

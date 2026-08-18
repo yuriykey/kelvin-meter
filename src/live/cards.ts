@@ -19,6 +19,12 @@ export interface PatchSpec {
   readonly role: PatchRole;
   /** The patch's name on the physical card. */
   readonly patchName: string;
+  /**
+   * One short word for the label under the on-screen guide box. The boxes sit
+   * close together on purpose, so a long name like "Neutral 6.5" runs into its
+   * neighbour's label.
+   */
+  readonly shortName: string;
   /** Where on the card to find it, in words. */
   readonly location: string;
   /** Approximate sRGB rendering, used only to colour the on-screen guide. */
@@ -38,10 +44,10 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
     name: 'ColorChecker Classic / Mini',
     note: 'Rows numbered from the top, columns from the left, card in landscape.',
     patches: [
-      { role: 'warm', patchName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
-      { role: 'cool', patchName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
-      { role: 'green', patchName: 'Green', location: 'row 3, column 2', swatch: '#66a64f' },
-      { role: 'neutral', patchName: 'Neutral 6.5', location: 'row 4, column 3', swatch: '#a0a0a0' },
+      { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
+      { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
+      { role: 'green', patchName: 'Green', shortName: 'Green', location: 'row 3, column 2', swatch: '#66a64f' },
+      { role: 'neutral', patchName: 'Neutral 6.5', shortName: 'Grey', location: 'row 4, column 3', swatch: '#a0a0a0' },
     ],
   },
   {
@@ -49,10 +55,10 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
     name: 'ColorChecker Passport (classic target)',
     note: 'Use the 24-patch classic target page, not the creative enhancement page.',
     patches: [
-      { role: 'warm', patchName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
-      { role: 'cool', patchName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
-      { role: 'green', patchName: 'Green', location: 'row 3, column 2', swatch: '#66a64f' },
-      { role: 'neutral', patchName: 'Neutral 6.5', location: 'row 4, column 3', swatch: '#a0a0a0' },
+      { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 1', swatch: '#d67e2c' },
+      { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 3, column 6', swatch: '#009fce' },
+      { role: 'green', patchName: 'Green', shortName: 'Green', location: 'row 3, column 2', swatch: '#66a64f' },
+      { role: 'neutral', patchName: 'Neutral 6.5', shortName: 'Grey', location: 'row 4, column 3', swatch: '#a0a0a0' },
     ],
   },
   {
@@ -60,10 +66,10 @@ export const REFERENCE_CARDS: readonly ReferenceCard[] = [
     name: 'SpyderCheckr 24',
     note: 'Card in landscape with the neutral ramp along the bottom row.',
     patches: [
-      { role: 'warm', patchName: 'Orange', location: 'row 2, column 4', swatch: '#e1802f' },
-      { role: 'cool', patchName: 'Cyan', location: 'row 2, column 1', swatch: '#0d8fc4' },
-      { role: 'green', patchName: 'Green', location: 'row 1, column 4', swatch: '#61a95f' },
-      { role: 'neutral', patchName: '50% grey', location: 'row 4, column 3', swatch: '#9d9d9d' },
+      { role: 'warm', patchName: 'Orange', shortName: 'Orange', location: 'row 2, column 4', swatch: '#e1802f' },
+      { role: 'cool', patchName: 'Cyan', shortName: 'Cyan', location: 'row 2, column 1', swatch: '#0d8fc4' },
+      { role: 'green', patchName: 'Green', shortName: 'Green', location: 'row 1, column 4', swatch: '#61a95f' },
+      { role: 'neutral', patchName: '50% grey', shortName: 'Grey', location: 'row 4, column 3', swatch: '#9d9d9d' },
     ],
   },
 ];

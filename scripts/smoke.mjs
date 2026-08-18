@@ -236,9 +236,17 @@ try {
   check('viewfinder is shown', (await page.locator('.viewfinder').count()) === 1);
   check('four guide boxes', (await page.locator('.guide').count()) === 4);
   check(
-    'guide boxes are labelled by role',
+    'guide boxes are labelled with the patch to find on the card',
     (await page.locator('.guide__label').allTextContents()).join(',') ===
-      'warm,cool,green,neutral',
+      'Orange,Cyan,Green,Grey',
+  );
+  check(
+    'guide boxes are numbered to match the legend',
+    (await page.locator('.guide__index').allTextContents()).join(',') === '1,2,3,4',
+  );
+  check(
+    'the squares are explained before they are shown',
+    (await page.locator('.card__title').allTextContents()).includes('What are the squares?'),
   );
 
   const video = await page.evaluate(() => {
@@ -247,11 +255,22 @@ try {
   });
   check('camera stream is playing', (video?.width ?? 0) > 0 && video?.paused === false);
 
-  const liveWarning = await page.locator('.readout__warning-detail').textContent();
+  // With no card and no profile, the precondition has to win. Being told to
+  // "angle the card away from the light" first is advice about a card this
+  // user does not have, for a problem that is not the one stopping them.
   check(
-    'patch problems are reported as a whole sentence',
-    liveWarning !== null && / (is|are) /.test(liveWarning) && liveWarning.endsWith('.'),
-    liveWarning ?? 'no warning',
+    'an uncalibrated user is told what they actually need',
+    (await page.locator('.readout__warning').textContent()) === 'NO CALIBRATION',
+  );
+  const liveWarning = (await page.locator('.readout__warning-detail').textContent()) ?? '';
+  check(
+    'the warning names the card and points at the mode that works',
+    /colour checker card/i.test(liveWarning) && /IMPORT RAW/.test(liveWarning),
+    liveWarning,
+  );
+  check(
+    'there is a way back to IMPORT RAW without hunting for it',
+    (await page.getByRole('button', { name: 'Use IMPORT RAW instead' }).count()) === 1,
   );
 
   /* ------------------------------------------------------ guide screen */

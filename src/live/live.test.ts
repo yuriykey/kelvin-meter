@@ -304,6 +304,17 @@ describe('reference cards', () => {
     }
   });
 
+  it('gives every patch a short label that will not collide with its neighbour', () => {
+    // The guide boxes sit close together on purpose, so these are rendered
+    // side by side under adjacent boxes about 45px wide.
+    for (const card of REFERENCE_CARDS) {
+      for (const patch of card.patches) {
+        expect(patch.shortName.length, `${card.id} ${patch.role}`).toBeLessThanOrEqual(6);
+        expect(patch.shortName).not.toMatch(/\s/);
+      }
+    }
+  });
+
   it('has unique ids and valid swatch colours', () => {
     const ids = REFERENCE_CARDS.map((card) => card.id);
     expect(new Set(ids).size).toBe(ids.length);

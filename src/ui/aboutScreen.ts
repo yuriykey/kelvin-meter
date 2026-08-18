@@ -207,16 +207,25 @@ export function renderAboutScreen(
 
   screen.appendChild(
     card(
-      'The LIVE button',
+      'The LIVE button, and what the squares are',
       para(
         'There is a second mode called LIVE. It points the camera at the room and guesses, with no photo needed.',
       ),
-      para('It needs a colour checker card, and you must calibrate it first. It is only a rough guess.'),
+      para(
+        'When you tap it you see four squares on the screen. They are not measuring the room. They are aiming marks.',
+      ),
+      para(
+        'They need a colour checker card. That is a printed card covered in small coloured squares, sold for checking colour in photos. You hold it in front of the camera and line each square on screen up with the colour named under it.',
+      ),
+      para(
+        'The app then compares those colours to each other. That comparison is what tells it about the light.',
+      ),
       el(
         'p',
-        { class: 'guide-note' },
-        'If you do not have a colour checker card, ignore this button. IMPORT RAW is the one to use.',
+        { class: 'guide-note guide-note--warn' },
+        'No card means this mode cannot work at all, and the squares will never do anything. Tap IMPORT RAW instead. It is the accurate one anyway.',
       ),
+      para('Even with a card, you must calibrate LIVE first, and it is only a rough guess.'),
     ),
   );
 

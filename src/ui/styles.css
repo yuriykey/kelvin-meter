@@ -927,3 +927,40 @@ button:focus-visible {
 .disclosure__body {
   padding: 0 16px 16px;
 }
+
+/* Numbered guide boxes, so each square ties to a row in the legend below. */
+.guide__index {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #06121f;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.guide--bad .guide__index {
+  background: var(--danger);
+  color: #2a0906;
+}
+
+.patch-legend__number {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #06121f;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
